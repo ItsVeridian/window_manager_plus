@@ -149,15 +149,12 @@ WindowManagerPlusPlugin::~WindowManagerPlusPlugin() {
       WindowManagerPlus::windows_.end()) {
     WindowManagerPlus::windows_[id]->Destroy();
     // calling WindowManager::windows_.erase(id); will cause a crash
-    std::thread([&]() {
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      threadMtx.lock();
-      if (WindowManagerPlus::windows_.find(id) !=
-          WindowManagerPlus::windows_.end()) {
-        WindowManagerPlus::windows_.erase(id);
-      }
-      threadMtx.unlock();
-    }).detach();
+
+    // Use a synchronous cleanup instead of a detached thread
+    {
+      std::lock_guard<std::mutex> lock(threadMtx);
+      WindowManagerPlus::windows_.erase(id);
+    }
   }
 }
 
